@@ -4,6 +4,8 @@ Aplicativo C# para Windows Forms. A publicação é para Windows x64 e inclui o 
 
 ## Uso
 
+Consulte o [Manual de uso](MANUAL.md) para seguir o passo a passo, entender os arquivos gerados e diagnosticar falhas.
+
 1. Abra `PublicacaoRefatorada/RecuperadorFirebird.exe`.
 2. Selecione o arquivo de origem e uma pasta de saída local com espaço para a cópia da origem e o banco novo. Feche conexões que estejam gravando no arquivo de origem.
 3. Confira a pasta da instalação Firebird. Preencha **Tabelas a excluir** apenas para omitir tabelas específicas.
