@@ -9,7 +9,7 @@ public sealed record GeneratedMetadataScript(string Content, MetadataResult Coun
 
 public static class MetadataScriptComposer
 {
-    private const string Identifier = """(?:"(?:""|[^"])*"|[\p{L}_$][\p{L}\p{N}_$]*)""";
+    internal const string Identifier = """(?:"(?:""|[^"])*"|[\p{L}_$][\p{L}\p{N}_$]*)""";
     private static readonly Regex ObjectDefinition = new(
         $@"^(?:CREATE(?:\s+OR\s+ALTER)?|RECREATE|ALTER)\s+(?<kind>EXCEPTION|VIEW|PROCEDURE|TRIGGER)\s+(?<name>{Identifier})",
         RegexOptions.IgnoreCase);
@@ -211,13 +211,13 @@ public static class MetadataScriptComposer
     private static string OneLine(string text) => text.Replace('\r', ' ').Replace('\n', ' ');
 
 
-    private static string TrimLeading(string text) =>
+    internal static string TrimLeading(string text) =>
         Regex.Replace(text, """\A(?:\s+|/\*[\s\S]*?\*/|--[^\r\n]*)*""", "");
 
-    private static string MaskQuotedComments(string text) =>
+    internal static string MaskQuotedComments(string text) =>
         Lexeme.Replace(text, match => match.Value.StartsWith('"') || match.Length == 1 ? match.Value : new string(' ', match.Length));
 
-    private static IEnumerable<string> TableItems(string source)
+    internal static IEnumerable<string> TableItems(string source)
     {
         var depth = 0;
         var start = 1;
@@ -241,7 +241,20 @@ public static class MetadataScriptComposer
         }
     }
 
-    private static IEnumerable<string> ReadStatements(string source)
+    internal static string AfterTableItems(string source)
+    {
+        var depth = 0;
+        foreach (Match match in Lexeme.Matches(source))
+        {
+            if (match.Value == "(")
+                depth++;
+            else if (match.Value == ")" && --depth == 0)
+                return source[(match.Index + 1)..];
+        }
+        throw new InvalidOperationException("Definição de tabela sem fechamento.");
+    }
+
+    internal static IEnumerable<string> ReadStatements(string source)
     {
         var delimiter = ";";
         var start = 0;

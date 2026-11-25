@@ -8,6 +8,7 @@ public sealed class LocalWorkspaceFiles : IWorkspaceFiles
     public bool FileExists(string path) => File.Exists(path);
     public bool DirectoryExists(string path) => Directory.Exists(path);
     public void CreateDirectory(string path) => Directory.CreateDirectory(path);
+    public void DeleteFile(string path) => File.Delete(path);
     public byte[] ReadBytes(string path) => File.ReadAllBytes(path);
 
     public Task<string> ReadTextAsync(string path, CancellationToken cancellation) =>

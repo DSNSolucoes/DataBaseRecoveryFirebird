@@ -11,6 +11,7 @@ internal sealed class MemoryFiles : IWorkspaceFiles
     public bool FileExists(string path) => files.ContainsKey(Path.GetFullPath(path));
     public bool DirectoryExists(string path) => directories.Contains(Path.GetFullPath(path));
     public void CreateDirectory(string path) => directories.Add(Path.GetFullPath(path));
+    public void DeleteFile(string path) => files.Remove(Path.GetFullPath(path));
     public byte[] ReadBytes(string path) => files[Path.GetFullPath(path)];
     public void SetBytes(string path, byte[] value) => files[Path.GetFullPath(path)] = value;
 

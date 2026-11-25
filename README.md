@@ -6,7 +6,9 @@ Aplicativo C# para Windows Forms. A publicação é para Windows x64 e inclui o 
 
 Consulte o [Manual de uso](MANUAL.md) para seguir o passo a passo, entender os arquivos gerados e diagnosticar falhas.
 
-1. Abra `PublicacaoRefatorada/RecuperadorFirebird.exe`.
+A aba **Completar esquema** compara um SQL de metadados com o banco recuperado e permite criar os objetos faltantes após revisão.
+
+1. Abra `PublicacaoEsquema/RecuperadorFirebird.exe`.
 2. Selecione o arquivo de origem e uma pasta de saída local com espaço para a cópia da origem e o banco novo. Feche conexões que estejam gravando no arquivo de origem.
 3. Confira a pasta da instalação Firebird. Preencha **Tabelas a excluir** apenas para omitir tabelas específicas.
 4. Clique em **Iniciar recuperação**. Use **Abrir pasta do resultado** para consultar o banco e os relatórios.
@@ -22,7 +24,7 @@ Use o SDK .NET 10 para compilar e publicar.
 ```powershell
 dotnet build RecuperadorFirebird.slnx -c Release
 dotnet test RecuperadorFirebird.slnx -c Release
-dotnet publish RecuperadorFirebird.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -o PublicacaoRefatorada
+dotnet publish RecuperadorFirebird.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -o PublicacaoEsquema
 ```
 
 O mesmo núcleo pode ser executado em lote para testes e diagnóstico.

@@ -15,7 +15,7 @@ public sealed class GenerateMetadataScript(IWorkspaceFiles files)
         return generated.Counts;
     }
 
-    private static string Decode(byte[] bytes)
+    internal static string Decode(byte[] bytes)
     {
         if (bytes.AsSpan().StartsWith(new byte[] { 0xff, 0xfe }) || bytes.AsSpan().StartsWith(new byte[] { 0xfe, 0xff }))
         {

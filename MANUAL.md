@@ -1,11 +1,11 @@
 # Manual de uso do Recuperador Firebird 5
 
-O programa tem duas abas. **Recuperar dados** copia as tabelas legíveis para um banco novo. **Gerar script de metadados** extrai objetos de um arquivo SQL para você aplicar depois.
+O programa tem três abas. **Recuperar dados** copia as tabelas legíveis para um banco novo. **Gerar script de metadados** extrai objetos para aplicação manual. **Completar esquema** compara o SQL de metadados com o catálogo de um banco e cria os objetos faltantes após confirmação.
 
 ## 1. Preparar o ambiente
 
 - Use Windows x64 e uma instalação local do Firebird 5 com o mecanismo embarcado e os utilitários `isql.exe`, `gfix.exe`, `gstat.exe` e `fbsvcmgr.exe`.
-- Se já tiver o executável publicado, abra `RecuperadorFirebird.exe`. Se baixou o código do GitHub, siga os [passos de compilação e publicação](README.md#compilação) para gerar o executável na pasta `PublicacaoRefatorada`.
+- Se já tiver o executável publicado, abra `RecuperadorFirebird.exe`. Se baixou o código do GitHub, siga os [passos de compilação e publicação](README.md#compilação) para gerar o executável na pasta `PublicacaoEsquema`.
 - Feche o aplicativo que usa o banco de origem e qualquer conexão que esteja gravando nele. Escolha uma pasta local com espaço para a cópia da origem, o banco novo e os relatórios.
 
 ## 2. Recuperar dados
@@ -50,7 +50,16 @@ Teste o SQL primeiro em uma cópia do banco recuperado. No PowerShell, ajuste os
 
 O script faz o commit ao final. Se ocorrer um erro, leia a mensagem antes de tentar novamente. Se a sessão do `isql` continuar aberta, execute `ROLLBACK;` antes de corrigir e repetir a aplicação.
 
-## 4. Resolver problemas comuns
+## 4. Completar o esquema do banco recuperado
+
+1. Abra a aba **Completar esquema** e selecione o `meta.sql` e uma cópia do banco recuperado.
+2. Confira a pasta em **Ferramentas do Firebird** e clique em **Verificar esquema**.
+3. Revise as tabelas, os campos, as PKs, FKs, restrições únicas, visões, gatilhos, procedimentos e exceções listados.
+4. Clique em **Criar objetos faltantes** e confirme o caminho do banco. O programa reaplica a verificação e mostra o que ainda estiver pendente.
+
+A verificação compara a presença dos objetos e preserva os existentes. Tabelas recriadas começam vazias, e campos novos usam a definição do SQL. Rotinas que referenciam exceções ausentes aparecem como bloqueadas. Quando o Firebird rejeita outro comando do lote, por exemplo por uma dependência ausente ou por dados incompatíveis com uma restrição, o lote é interrompido e a mensagem aparece na aba.
+
+## 5. Resolver problemas comuns
 
 | Situação | O que conferir |
 | --- | --- |

@@ -25,7 +25,7 @@ internal sealed class MainForm : Form
     private CancellationTokenSource? cancellation;
     private string? runFolder;
 
-    public MainForm(RecoverDatabase recoverDatabase, GenerateMetadataScript metadata, string firebirdInstallation)
+    public MainForm(RecoverDatabase recoverDatabase, GenerateMetadataScript metadata, CompleteDatabaseSchema completion, string firebirdInstallation)
     {
         this.recoverDatabase = recoverDatabase;
         firebird.Text = firebirdInstallation;
@@ -44,9 +44,13 @@ internal sealed class MainForm : Form
         var tabs = new TabControl { Dock = DockStyle.Fill };
         var recoveryTab = new TabPage("Recuperar dados") { BackColor = BackColor };
         var metadataTab = new TabPage("Gerar script de metadados") { BackColor = BackColor };
+        var completionTab = new TabPage("Completar esquema") { BackColor = BackColor };
         recoveryTab.Controls.Add(layout);
         metadataTab.Controls.Add(new MetadataPage(metadata));
-        tabs.TabPages.AddRange([recoveryTab, metadataTab]);
+        var schemaPage = new SchemaCompletionPage(completion, firebirdInstallation);
+        completionTab.Controls.Add(schemaPage);
+        tabs.TabPages.AddRange([recoveryTab, metadataTab, completionTab]);
+        FormClosing += (_, args) => { if (schemaPage.IsBusy) args.Cancel = true; };
         Controls.Add(tabs);
         AddWide(layout, new Label
         {

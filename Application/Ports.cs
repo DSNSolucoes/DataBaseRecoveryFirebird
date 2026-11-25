@@ -5,6 +5,7 @@ public interface IWorkspaceFiles
     bool FileExists(string path);
     bool DirectoryExists(string path);
     void CreateDirectory(string path);
+    void DeleteFile(string path);
     byte[] ReadBytes(string path);
     Task<string> ReadTextAsync(string path, CancellationToken cancellation);
     Task WriteTextAsync(string path, string content, bool withBom = false, CancellationToken cancellation = default);
