@@ -1,0 +1,16 @@
+.vs/
+bin/
+obj/
+TestResults/
+Publicacao*/
+*.user
+*.suo
+*.fdb
+*.foc
+*.gdb
+*.fbk
+*.bak
+*.exe
+*.log
+meta.sql
+aplicar-metadados.sql

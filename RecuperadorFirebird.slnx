@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Application/">
+    <Project Path="Application/RecuperadorFirebird.Application.csproj" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="Domain/RecuperadorFirebird.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/RecuperadorFirebird.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/RecuperadorFirebird.Tests.csproj" />
+  </Folder>
+  <Project Path="RecuperadorFirebird.csproj" />
+</Solution>

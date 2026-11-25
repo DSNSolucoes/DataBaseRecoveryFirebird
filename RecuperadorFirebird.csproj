@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="Application\RecuperadorFirebird.Application.csproj" />
+    <ProjectReference Include="Domain\RecuperadorFirebird.Domain.csproj" />
+    <ProjectReference Include="Infrastructure\RecuperadorFirebird.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Domain/**;Application/**;Infrastructure/**;Tests/**;Publicacao*/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+</Project>
