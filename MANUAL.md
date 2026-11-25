@@ -54,7 +54,7 @@ O script faz o commit ao final. Se ocorrer um erro, leia a mensagem antes de ten
 
 1. Abra a aba **Completar esquema** e selecione o `meta.sql` e uma cópia do banco recuperado.
 2. Confira a pasta em **Ferramentas do Firebird** e clique em **Verificar esquema**.
-3. Revise as tabelas, os campos, as PKs, FKs, restrições únicas, visões, gatilhos, procedimentos e exceções listados.
+3. Revise as tabelas, os campos, as PKs, FKs, restrições únicas, índices, visões, gatilhos, procedimentos e exceções listados.
 4. Clique em **Criar objetos faltantes** e confirme o caminho do banco. O programa reaplica a verificação e mostra o que ainda estiver pendente.
 
 A verificação compara a presença dos objetos e preserva os existentes. Tabelas recriadas começam vazias, e campos novos usam a definição do SQL. Rotinas que referenciam exceções ausentes aparecem como bloqueadas. Quando o Firebird rejeita outro comando do lote, por exemplo por uma dependência ausente ou por dados incompatíveis com uma restrição, o lote é interrompido e a mensagem aparece na aba.

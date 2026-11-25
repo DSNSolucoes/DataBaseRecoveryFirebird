@@ -15,6 +15,9 @@ public static class SchemaCompletion
     private static readonly Regex Object = new(
         $@"^(?:CREATE(?:\s+OR\s+ALTER)?|RECREATE|ALTER)\s+(?<type>EXCEPTION|VIEW|PROCEDURE|TRIGGER)\s+(?<name>{Id})",
         RegexOptions.IgnoreCase);
+    private static readonly Regex Index = new(
+        $@"^CREATE\s+(?:UNIQUE\s+)?(?:(?:ASC(?:ENDING)?|DESC(?:ENDING)?)\s+)?INDEX\s+(?<name>{Id})\s+ON\s+(?<table>{Id})",
+        RegexOptions.IgnoreCase);
     private static readonly Regex InlineKey = new(
         $"""(?:--[^\r\n]*|/\*[\s\S]*?\*/|'(?:''|[^'])*'|"(?:""|[^"])*")|\b(?:CONSTRAINT\s+(?<name>{Id})\s+)?(?<type>PRIMARY\s+KEY|UNIQUE|REFERENCES)\b""",
         RegexOptions.IgnoreCase);
@@ -27,6 +30,7 @@ public static class SchemaCompletion
         var tables = new List<SchemaChange>();
         var fields = new List<SchemaChange>();
         var keys = new List<SchemaChange>();
+        var indexes = new List<SchemaChange>();
         var objects = new List<SchemaChange>();
         var plannedKeys = new HashSet<string>(StringComparer.Ordinal);
         var plannedObjects = new HashSet<string>(StringComparer.Ordinal);
@@ -82,6 +86,22 @@ public static class SchemaCompletion
                 continue;
             }
 
+            var index = Index.Match(statement);
+            if (index.Success)
+            {
+                foundDefinitions = true;
+                var indexName = Sql.Unquote(index.Groups["name"].Value);
+                var indexTable = Sql.Unquote(index.Groups["table"].Value);
+                if (existing.Indexes.TryGetValue(indexName, out var owner))
+                {
+                    if (owner != indexTable)
+                        throw new InvalidOperationException($"O índice {indexName} já existe em {owner}, mas o SQL o define em {indexTable}.");
+                }
+                else if (plannedObjects.Add("INDEX|" + indexName))
+                    indexes.Add(new SchemaChange("Índice", $"{indexTable}.{indexName}", statement));
+                continue;
+            }
+
             var definition = Object.Match(statement);
             if (!definition.Success)
                 continue;
@@ -111,6 +131,7 @@ public static class SchemaCompletion
                 : item).ToArray();
         return tables.Concat(fields).Concat(keys.Where(key => key.Kind == "PK"))
             .Concat(keys.Where(key => key.Kind == "UNQ")).Concat(keys.Where(key => key.Kind == "FK"))
+            .Concat(indexes)
             .Concat(checkedObjects.Where(item => item.Kind == "EXCEPTION"))
             .Concat(checkedObjects.Where(item => item.Kind != "EXCEPTION")).ToArray();
 
@@ -196,6 +217,7 @@ public static class SchemaCompletion
         public HashSet<string> Tables { get; } = new(StringComparer.Ordinal);
         public HashSet<(string, string)> Fields { get; } = [];
         public HashSet<(string, string)> Objects { get; } = [];
+        public Dictionary<string, string> Indexes { get; } = new(StringComparer.Ordinal);
         public CatalogKey[] Keys { get; }
 
         public Catalog(string text)
@@ -209,6 +231,7 @@ public static class SchemaCompletion
                     case ["T", var table]: Tables.Add(table); break;
                     case ["C", var table, var column]: Fields.Add((table, column)); break;
                     case ["O", var kind, var name]: Objects.Add((kind, name)); break;
+                    case ["I", var name, var table]: Indexes[name] = table; break;
                     case ["K", _, _, _, _, _, _]: keyRows.Add(parts); break;
                 }
             }

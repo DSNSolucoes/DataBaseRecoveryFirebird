@@ -45,4 +45,23 @@ public sealed class SchemaCompletionTests
         const string meta = "CREATE VIEW V AS SELECT 1 AS ID FROM RDB$DATABASE;";
         Assert.Empty(SchemaCompletion.Compare(meta, "O|VIEW|V"));
     }
+
+    [Fact]
+    public void PlansOnlyMissingIndexesAndPreservesTheirDefinitions()
+    {
+        const string meta = """
+            CREATE TABLE T (ID INTEGER, NAME VARCHAR(50));
+            CREATE INDEX EXISTING_INDEX ON T (ID);
+            CREATE UNIQUE DESCENDING INDEX NEW_INDEX ON T (ID, NAME);
+            CREATE INDEX EXPRESSION_INDEX ON T COMPUTED BY (UPPER(NAME));
+            CREATE INDEX PARTIAL_INDEX ON T (ID) WHERE ID > 0;
+            """;
+        var plan = SchemaCompletion.Compare(meta, "T|T\nC|T|ID\nC|T|NAME\nI|EXISTING_INDEX|T");
+
+        Assert.Equal(new[] { "T.NEW_INDEX", "T.EXPRESSION_INDEX", "T.PARTIAL_INDEX" }, plan.Select(change => change.Name));
+        Assert.All(plan, change => Assert.Equal("Índice", change.Kind));
+        Assert.Contains("CREATE UNIQUE DESCENDING INDEX NEW_INDEX", SchemaCompletion.BuildScript(plan));
+        Assert.Contains("COMPUTED BY (UPPER(NAME))", SchemaCompletion.BuildScript(plan));
+        Assert.Contains("WHERE ID > 0", SchemaCompletion.BuildScript(plan));
+    }
 }
