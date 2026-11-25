@@ -75,6 +75,72 @@ public sealed class RepairTests
         Assert.NotNull(result.RestoredDatabase);
     }
 
+    [Theory]
+    [InlineData("Shadow count 1\nNext header page 0\n*END*")]
+    [InlineData("Shadow count 0\nNext header page 12\n*END*")]
+    [InlineData("Shadow count 0\nNext header page 0\nDifference file: copy.delta\n*END*")]
+    [InlineData("Shadow count 0\nNext header page 0\nAttributes backup lock\n*END*")]
+    [InlineData("Shadow count 0\nNext header page 0")]
+    public async Task RefusesCopiesWhoseHeadersDoNotEstablishIsolation(string header)
+    {
+        var (files, tools, request) = Arrange(RepairLevel.Diagnostic);
+        tools.Header = header;
+
+        var result = await new RepairDatabase(files, tools).ExecuteAsync(request, _ => { });
+
+        Assert.Equal(RepairOutcome.Failed, result.Outcome);
+        Assert.Equal("gstat", Assert.Single(tools.Calls).Tool);
+    }
+
+    [Theory]
+    [InlineData(1, true)]
+    [InlineData(0, false)]
+    public async Task DoesNotAdvertiseAnIncompleteRestore(int exitCode, bool outputExists)
+    {
+        var (files, tools, request) = Arrange(RepairLevel.LogicalRebuild);
+        tools.RestoreExitCode = exitCode;
+        tools.CreateRestoreFile = outputExists;
+
+        var result = await new RepairDatabase(files, tools).ExecuteAsync(request, _ => { });
+
+        Assert.Equal(RepairOutcome.Failed, result.Outcome);
+        Assert.Null(result.RestoredDatabase);
+        Assert.DoesNotContain(tools.Calls, call => call.Args.Contains("-no_update"));
+        Assert.Contains("nenhum confirmado", await files.ReadTextAsync(Path.Combine(result.Folder, "resumo.txt"), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RecordsCancellationAndDoesNotStartRestoration()
+    {
+        var (files, tools, request) = Arrange(RepairLevel.LogicalRebuild);
+        using var cancellation = new CancellationTokenSource();
+        tools.BeforeBackup = cancellation.Cancel;
+
+        var result = await new RepairDatabase(files, tools).ExecuteAsync(request, _ => { }, cancellation.Token);
+
+        Assert.Equal(RepairOutcome.Cancelled, result.Outcome);
+        Assert.Null(result.RestoredDatabase);
+        Assert.DoesNotContain(tools.Calls, call => call.Args.Contains("-create"));
+        Assert.Contains("Execução cancelada", await files.ReadTextAsync(Path.Combine(result.Folder, "resumo.txt"), CancellationToken.None));
+        Assert.Equal(new byte[] { 42 }, files.ReadBytes(request.Source));
+    }
+
+    [Theory]
+    [InlineData(RepairLevel.PageRepair, false)]
+    [InlineData(RepairLevel.Mend, true)]
+    public async Task FailedStructuralValidationOnlyContinuesToMendWhenSelected(RepairLevel level, bool expectMend)
+    {
+        var (files, tools, request) = Arrange(level);
+        tools.StructuralExitCode = 1;
+        tools.MendExitCode = 1;
+
+        var result = await new RepairDatabase(files, tools).ExecuteAsync(request, _ => { });
+
+        Assert.Equal(RepairOutcome.Failed, result.Outcome);
+        Assert.Equal(expectMend, tools.Calls.Any(call => call.Args.Contains("-mend")));
+        Assert.DoesNotContain(tools.Calls, call => call.Tool == "gbak");
+    }
+
     private static (MemoryFiles, FakeTools, RepairRequest) Arrange(RepairLevel level)
     {
         var files = new MemoryFiles();
@@ -90,6 +156,11 @@ public sealed class RepairTests
         public string Header { get; set; } = "Shadow count 0\nNext header page 0\n*END*";
         public string Validation { get; set; } = "";
         public bool FailBackup { get; set; }
+        public int RestoreExitCode { get; set; }
+        public bool CreateRestoreFile { get; set; } = true;
+        public int StructuralExitCode { get; set; }
+        public int MendExitCode { get; set; }
+        public Action? BeforeBackup { get; set; }
 
         public void ValidateInstallation(string directory) { }
 
@@ -99,11 +170,24 @@ public sealed class RepairTests
             Calls.Add((executable, arguments));
             if (executable == "gstat")
                 return Task.FromResult(new FirebirdCommandResult(0, Header));
-            if (executable == "gbak")
+            if (executable == "gbak" && arguments.Contains("-backup"))
+            {
+                BeforeBackup?.Invoke();
+                cancellation.ThrowIfCancellationRequested();
                 files.SetBytes(arguments[^1], [1]);
-            if (executable == "gbak" && arguments.Contains("-backup") && FailBackup)
-                return Task.FromResult(new FirebirdCommandResult(1, "gbak: ERROR"));
-            return Task.FromResult(new FirebirdCommandResult(0, arguments.Contains("-no_update") ? Validation : ""));
+                return Task.FromResult(FailBackup ? new FirebirdCommandResult(1, "gbak: ERROR") : new FirebirdCommandResult(0, ""));
+            }
+            if (executable == "gbak" && arguments.Contains("-create"))
+            {
+                if (CreateRestoreFile)
+                    files.SetBytes(arguments[^1], [1]);
+                return Task.FromResult(new FirebirdCommandResult(RestoreExitCode, ""));
+            }
+            if (arguments.Contains("-mend"))
+                return Task.FromResult(new FirebirdCommandResult(MendExitCode, ""));
+            if (arguments.Contains("-no_update"))
+                return Task.FromResult(new FirebirdCommandResult(0, Validation));
+            return Task.FromResult(new FirebirdCommandResult(StructuralExitCode, ""));
         }
     }
 }

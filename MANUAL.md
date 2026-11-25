@@ -76,6 +76,31 @@ A verificação compara a presença dos objetos e preserva os existentes. Tabela
 
 O arquivo original é preservado. A validação final verifica a estrutura do banco restaurado. Confira os dados importantes antes de colocá-lo em uso. Esta aba foi feita para bancos de arquivo único, sem arquivos de sombra ou de diferenças. Arquivos parciais de uma tentativa interrompida devem ser avaliados junto do resumo e dos logs.
 
+### Interpretar o resultado
+
+| Arquivo | O que conferir |
+| --- | --- |
+| `resumo.txt` | Indica o nível, o resultado e se a restauração foi confirmada. |
+| `01-cabecalho.log` | Cabeçalho lido pelo `gstat`. Se a aba parar aqui, confira se o banco usa arquivos adicionais ou se o cabeçalho está ilegível. |
+| `02-diagnostico.log` | Resultado do nível 1. Um diagnóstico sem erros reportados pode deixar este log vazio. |
+| `02-reparo-estrutural.log` e `03-mend.log` | Resultado das tentativas de correção. O log do `mend` existe quando essa etapa foi executada. |
+| `04-backup.log` e `05-restauracao.log` | Mostram até onde o backup e a restauração chegaram. A presença de um arquivo de saída, por si só, não confirma que a etapa terminou. |
+| `06-validacao-final.log` | Verificação do banco restaurado. Se reportar erros, trate o banco como pendente de revisão. |
+
+**Cancelar** interrompe a tentativa atual. Os arquivos já criados ficam na pasta da execução. Para tentar novamente, selecione a origem que deseja preservar. O programa cria outra cópia e não muda de nível automaticamente.
+
+### Executar pelo PowerShell
+
+O executável aceita `--reparar`, seguido do caminho da origem, da pasta de saída, da instalação do Firebird e do nível de 1 a 5.
+
+```powershell
+$app = '.\PublicacaoEsquema\RecuperadorFirebird.exe'
+$argumentos = '--reparar "C:\Bancos\origem.fdb" "C:\Recuperados" "C:\Program Files\Firebird\Firebird_5_0" 1'
+(Start-Process -FilePath $app -ArgumentList $argumentos -Wait -PassThru).ExitCode
+```
+
+Os níveis 3 a 5 também exigem `--aceitar-risco` no fim dos argumentos. O código de saída é `0` para diagnóstico sem problemas reportados ou restauração com validação concluída, `2` para diagnóstico com problemas ou restauração com pendências, `1` para falha ou interrupção e `64` para sintaxe inválida.
+
 Referências oficiais do Firebird. [Validação e recuperação com gfix](https://firebirdsql.org/file/documentation/html/en/firebirddocs/gfix/firebird-gfix.html) · [Backup e restauração com gbak](https://firebirdsql.org/file/documentation/html/en/firebirddocs/gbak/firebird-gbak.html)
 
 ## 6. Resolver problemas comuns
