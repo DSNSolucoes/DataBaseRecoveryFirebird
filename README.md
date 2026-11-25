@@ -8,6 +8,8 @@ Consulte o [Manual de uso](MANUAL.md) para seguir o passo a passo, entender os a
 
 A aba **Completar esquema** compara um SQL de metadados com o banco recuperado e permite criar os objetos faltantes após revisão.
 
+A aba **Reparar banco** oferece cinco níveis, do diagnóstico à tentativa com `mend` e checksums ignorados. Cada execução trabalha em uma cópia e guarda os logs numa pasta própria.
+
 1. Abra `PublicacaoEsquema/RecuperadorFirebird.exe`.
 2. Selecione o arquivo de origem e uma pasta de saída local com espaço para a cópia da origem e o banco novo. Feche conexões que estejam gravando no arquivo de origem.
 3. Confira a pasta da instalação Firebird. Preencha **Tabelas a excluir** apenas para omitir tabelas específicas.

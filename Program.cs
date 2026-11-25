@@ -14,6 +14,30 @@ static class Program
         var recover = new RecoverDatabase(files, tools);
         var metadata = new GenerateMetadataScript(files);
         var completion = new CompleteDatabaseSchema(files, tools);
+        var repair = new RepairDatabase(files, tools);
+        if (args.Length > 0 && args[0] == "--reparar")
+        {
+            if (args.Length is not (5 or 6) || !int.TryParse(args[4], out var level) ||
+                (args.Length == 6 && args[5] != "--aceitar-risco"))
+                return 64;
+            try
+            {
+                var request = new RepairRequest(args[1], args[2], args[3], (RepairLevel)level, args.Length == 6);
+                var result = repair.ExecuteAsync(request, Console.WriteLine).GetAwaiter().GetResult();
+                Console.WriteLine(result.Message);
+                return result.Outcome switch
+                {
+                    RepairOutcome.DiagnosticClean or RepairOutcome.RestoredAndValidated => 0,
+                    RepairOutcome.DiagnosticIssues or RepairOutcome.RestoredWithWarnings => 2,
+                    _ => 1
+                };
+            }
+            catch (Exception error)
+            {
+                Console.Error.WriteLine(error.Message);
+                return 1;
+            }
+        }
         if (args.Length > 0 && args[0] is "--verificar-esquema" or "--completar-esquema")
         {
             if (args.Length != 4)
@@ -70,7 +94,7 @@ static class Program
             }
         }
         ApplicationConfiguration.Initialize();
-        System.Windows.Forms.Application.Run(new MainForm(recover, metadata, completion, FirebirdProcessTools.FindInstallation()));
+        System.Windows.Forms.Application.Run(new MainForm(recover, metadata, completion, repair, FirebirdProcessTools.FindInstallation()));
         return 0;
     }
 }

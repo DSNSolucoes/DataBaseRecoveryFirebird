@@ -1,6 +1,6 @@
 # Manual de uso do Recuperador Firebird 5
 
-O programa tem três abas. **Recuperar dados** copia as tabelas legíveis para um banco novo. **Gerar script de metadados** extrai objetos para aplicação manual. **Completar esquema** compara o SQL de metadados com o catálogo de um banco e cria os objetos faltantes após confirmação.
+**Recuperar dados** copia as tabelas legíveis para um banco novo. **Gerar script de metadados** extrai objetos para aplicação manual. **Completar esquema** compara o SQL de metadados com o catálogo do banco. **Reparar banco** oferece níveis de diagnóstico e reparação em uma cópia.
 
 ## 1. Preparar o ambiente
 
@@ -59,7 +59,26 @@ O script faz o commit ao final. Se ocorrer um erro, leia a mensagem antes de ten
 
 A verificação compara a presença dos objetos e preserva os existentes. Tabelas recriadas começam vazias, e campos novos usam a definição do SQL. Rotinas que referenciam exceções ausentes aparecem como bloqueadas. Quando o Firebird rejeita outro comando do lote, por exemplo por uma dependência ausente ou por dados incompatíveis com uma restrição, o lote é interrompido e a mensagem aparece na aba.
 
-## 5. Resolver problemas comuns
+## 5. Reparar um banco por nível
+
+1. Abra **Reparar banco** e selecione o banco de origem, a pasta de saída e a instalação do Firebird 5. Os níveis de reconstrução também exigem `gbak.exe`. Feche os programas que gravam na origem antes da cópia.
+2. Escolha um nível. Comece pelo diagnóstico e passe para outro nível se necessário. Cada tentativa cria uma pasta `reparacao-...` e usa uma nova cópia do arquivo selecionado.
+3. Clique em **Executar nível**. Para os níveis 3 a 5, leia a confirmação sobre risco de perda no resultado.
+4. Abra a pasta do resultado. Consulte `resumo.txt` e os logs numerados. Nos níveis 2 a 5, uma restauração bem-sucedida gera `backup.fbk` e `banco-restaurado.fdb`.
+
+| Nível | Procedimento | Efeito |
+| --- | --- | --- |
+| **1 · Básico** | `gfix -validate -full -no_update` | Diagnóstico de páginas e registros sem reparação. |
+| **2 · Médio** | `gbak -backup -garbage_collect -nodbtriggers`, restauração em arquivo novo e validação sem reparação | Reconstrói a partir dos dados que o backup consegue ler, com as verificações de integridade habilitadas. |
+| **3 · Estrutural** | `gfix -validate` e reconstrução do nível 2 | Pode alterar estruturas e afetar informações danificadas na cópia. |
+| **4 · Avançado** | `gfix -validate -full`, `gfix -mend` e reconstrução | O backup pode omitir registros danificados. |
+| **5 · Último recurso** | `-ignore` na validação completa, no `mend` e no backup, seguido de restauração e validação | Pode aceitar páginas danificadas ou omitir registros. |
+
+O arquivo original é preservado. A validação final verifica a estrutura do banco restaurado. Confira os dados importantes antes de colocá-lo em uso. Esta aba foi feita para bancos de arquivo único, sem arquivos de sombra ou de diferenças. Arquivos parciais de uma tentativa interrompida devem ser avaliados junto do resumo e dos logs.
+
+Referências oficiais do Firebird. [Validação e recuperação com gfix](https://firebirdsql.org/file/documentation/html/en/firebirddocs/gfix/firebird-gfix.html) · [Backup e restauração com gbak](https://firebirdsql.org/file/documentation/html/en/firebirddocs/gbak/firebird-gbak.html)
+
+## 6. Resolver problemas comuns
 
 | Situação | O que conferir |
 | --- | --- |
